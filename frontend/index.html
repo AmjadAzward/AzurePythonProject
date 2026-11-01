@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Azure Utility Service</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Local utility service</p>
+          <h1>Azure Utility Service</h1>
+        </div>
+        <div class="status-card">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="serviceStatus">Checking...</span>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel">
+          <h2>Personal greeting</h2>
+          <form id="greetingForm">
+            <label>
+              Name
+              <input type="text" name="name" placeholder="David" required />
+            </label>
+            <label>
+              City
+              <input type="text" name="city" placeholder="Manchester" />
+            </label>
+            <label>
+              Language
+              <select name="language">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+              </select>
+            </label>
+            <label>
+              Interests
+              <input type="text" name="interests" placeholder="Python, Learning, Travel" />
+            </label>
+            <button type="submit">Generate greeting</button>
+          </form>
+          <div id="greetingResult" class="result-box empty">No greeting generated yet.</div>
+        </section>
+
+        <section class="panel">
+          <h2>Create profile</h2>
+          <form id="profileForm">
+            <label>
+              Name
+              <input type="text" name="name" placeholder="Ava" required />
+            </label>
+            <label>
+              City
+              <input type="text" name="city" placeholder="Berlin" />
+            </label>
+            <label>
+              Language
+              <select name="language">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+              </select>
+            </label>
+            <label>
+              Interests
+              <input type="text" name="interests" placeholder="AI, Books" />
+            </label>
+            <button type="submit">Save profile</button>
+          </form>
+          <div id="profileMessage" class="result-box empty">No profile action yet.</div>
+        </section>
+      </main>
+
+      <section class="panel list-panel">
+        <div class="panel-header">
+          <h2>Profiles</h2>
+          <button id="refreshProfiles" class="secondary">Refresh</button>
+        </div>
+        <div id="profilesList" class="profile-list">
+          <p class="empty-state">Loading profiles...</p>
+        </div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
