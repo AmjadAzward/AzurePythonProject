@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1",
+    "name": "Ava",
+    "city": "Berlin",
+    "language": "German",
+    "interests": [
+      "AI",
+      "Books"
+    ],
+    "created_at": "2026-11-01T04:35:12.033226Z"
+  }
+]
