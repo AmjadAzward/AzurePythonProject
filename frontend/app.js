@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:7071/api";
+const API_BASE = "http://localhost:7072/api";
 
 const serviceStatus = document.getElementById("serviceStatus");
 const statusDot = document.getElementById("statusDot");

@@ -10,6 +10,20 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 PROFILES_FILE = DATA_DIR / "profiles.json"
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+}
+
+
+def _json_response(payload, status_code=200):
+    return func.HttpResponse(
+        json.dumps(payload),
+        mimetype="application/json",
+        status_code=status_code,
+        headers=CORS_HEADERS,
+    )
 
 
 def _ensure_data_dir():
@@ -93,8 +107,11 @@ def _build_recommendations(city, interests):
     return recommendations[:4]
 
 
-@app.route(route="http_trigger", methods=["GET", "POST"])
+@app.route(route="http_trigger", methods=["GET", "POST", "OPTIONS"])
 def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method.lower() == "options":
+        return _json_response({"status": "ok"}, 200)
+
     logging.info("Utility HTTP trigger function processed a request.")
 
     payload = _parse_request_body(req) if req.method.lower() == "post" else {}
@@ -106,14 +123,10 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     interests = _normalize_interests(req.params.get("interests") or request_data.get("interests"))
 
     if not name:
-        return func.HttpResponse(
-            json.dumps({
-                "status": "error",
-                "message": "name is required. Pass a name in the query string or in the request body."
-            }),
-            mimetype="application/json",
-            status_code=400,
-        )
+        return _json_response({
+            "status": "error",
+            "message": "name is required. Pass a name in the query string or in the request body."
+        }, 400)
 
     greeting = _get_time_based_greeting()
     location_text = f" from {city}" if city else ""
@@ -143,68 +156,54 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         "timestamp": _utc_now().isoformat().replace("+00:00", "Z"),
     }
 
-    return func.HttpResponse(
-        json.dumps(response_payload),
-        mimetype="application/json",
-        status_code=200,
-    )
+    return _json_response(response_payload, 200)
 
 
-@app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="health", methods=["GET", "OPTIONS"], auth_level=func.AuthLevel.ANONYMOUS)
 def health(req: func.HttpRequest) -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps({
-            "status": "healthy",
-            "service": "azure-python-project",
-            "message": "The function app is running correctly.",
-            "timestamp": _utc_now().isoformat().replace("+00:00", "Z"),
-        }),
-        mimetype="application/json",
-        status_code=200,
-    )
+    if req.method.lower() == "options":
+        return _json_response({"status": "ok"}, 200)
+    return _json_response({
+        "status": "healthy",
+        "service": "azure-python-project",
+        "message": "The function app is running correctly.",
+        "timestamp": _utc_now().isoformat().replace("+00:00", "Z"),
+    }, 200)
 
 
-@app.route(route="info", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="info", methods=["GET", "OPTIONS"], auth_level=func.AuthLevel.ANONYMOUS)
 def info(req: func.HttpRequest) -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps({
-            "service": "azure-python-project",
-            "version": "1.0.0",
-            "environment": os.getenv("ENVIRONMENT", "local"),
-            "runtime": "python",
-            "message": "This service provides health, profile, and utility responses without requiring a cloud subscription.",
-        }),
-        mimetype="application/json",
-        status_code=200,
-    )
+    if req.method.lower() == "options":
+        return _json_response({"status": "ok"}, 200)
+    return _json_response({
+        "service": "azure-python-project",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "local"),
+        "runtime": "python",
+        "message": "This service provides health, profile, and utility responses without requiring a cloud subscription.",
+    }, 200)
 
 
-@app.route(route="profiles", methods=["GET", "POST"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="profiles", methods=["GET", "POST", "OPTIONS"], auth_level=func.AuthLevel.ANONYMOUS)
 def profiles(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method.lower() == "options":
+        return _json_response({"status": "ok"}, 200)
     if req.method.lower() == "get":
         profile_list = _read_profiles()
-        return func.HttpResponse(
-            json.dumps({
-                "count": len(profile_list),
-                "profiles": profile_list,
-                "timestamp": _utc_now().isoformat().replace("+00:00", "Z"),
-            }),
-            mimetype="application/json",
-            status_code=200,
-        )
+        return _json_response({
+            "count": len(profile_list),
+            "profiles": profile_list,
+            "timestamp": _utc_now().isoformat().replace("+00:00", "Z"),
+        }, 200)
 
     payload = _parse_request_body(req)
     request_data = payload if isinstance(payload, dict) else {}
     name = (request_data.get("name") or "").strip()
     if not name:
-        return func.HttpResponse(
-            json.dumps({
-                "status": "error",
-                "message": "name is required to create a profile."
-            }),
-            mimetype="application/json",
-            status_code=400,
-        )
+        return _json_response({
+            "status": "error",
+            "message": "name is required to create a profile."
+        }, 400)
 
     profile_list = _read_profiles()
     profile_id = _next_profile_id(profile_list)
@@ -222,54 +221,40 @@ def profiles(req: func.HttpRequest) -> func.HttpResponse:
     profile_list.append(profile)
     _write_profiles(profile_list)
 
-    return func.HttpResponse(
-        json.dumps({
-            "status": "created",
-            "profile": profile,
-        }),
-        mimetype="application/json",
-        status_code=201,
-    )
+    return _json_response({
+        "status": "created",
+        "profile": profile,
+    }, 201)
 
 
-@app.route(route="profile/{profile_id}", methods=["GET", "PUT", "DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="profile/{profile_id}", methods=["GET", "PUT", "DELETE", "OPTIONS"], auth_level=func.AuthLevel.ANONYMOUS)
 def profile_by_id(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method.lower() == "options":
+        return _json_response({"status": "ok"}, 200)
     profile_id = req.route_params.get("profile_id")
     profile_list = _read_profiles()
     index = next((idx for idx, item in enumerate(profile_list) if str(item.get("id")) == str(profile_id)), None)
 
     if index is None:
-        return func.HttpResponse(
-            json.dumps({
-                "status": "not_found",
-                "message": f"Profile {profile_id} was not found."
-            }),
-            mimetype="application/json",
-            status_code=404,
-        )
+        return _json_response({
+            "status": "not_found",
+            "message": f"Profile {profile_id} was not found."
+        }, 404)
 
     profile = profile_list[index]
 
     if req.method.lower() == "get":
-        return func.HttpResponse(
-            json.dumps({"profile": profile}),
-            mimetype="application/json",
-            status_code=200,
-        )
+        return _json_response({"profile": profile}, 200)
 
     if req.method.lower() == "put":
         payload = _parse_request_body(req)
         request_data = payload if isinstance(payload, dict) else {}
         name = (request_data.get("name") or profile.get("name") or "").strip()
         if not name:
-            return func.HttpResponse(
-                json.dumps({
-                    "status": "error",
-                    "message": "name is required to update a profile."
-                }),
-                mimetype="application/json",
-                status_code=400,
-            )
+            return _json_response({
+                "status": "error",
+                "message": "name is required to update a profile."
+            }, 400)
 
         city = (request_data.get("city") or profile.get("city") or "").strip()
         language = _resolve_language(request_data.get("language") or profile.get("language"))
@@ -285,29 +270,17 @@ def profile_by_id(req: func.HttpRequest) -> func.HttpResponse:
         profile_list[index] = updated_profile
         _write_profiles(profile_list)
 
-        return func.HttpResponse(
-            json.dumps({
-                "status": "updated",
-                "profile": updated_profile,
-            }),
-            mimetype="application/json",
-            status_code=200,
-        )
+        return _json_response({
+            "status": "updated",
+            "profile": updated_profile,
+        }, 200)
 
     if req.method.lower() == "delete":
         del profile_list[index]
         _write_profiles(profile_list)
-        return func.HttpResponse(
-            json.dumps({
-                "status": "deleted",
-                "deleted_id": profile_id,
-            }),
-            mimetype="application/json",
-            status_code=200,
-        )
+        return _json_response({
+            "status": "deleted",
+            "deleted_id": profile_id,
+        }, 200)
 
-    return func.HttpResponse(
-        json.dumps({"status": "error", "message": "Unsupported method."}),
-        mimetype="application/json",
-        status_code=405,
-    )
+    return _json_response({"status": "error", "message": "Unsupported method."}, 405)
