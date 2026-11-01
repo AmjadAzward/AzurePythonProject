@@ -232,13 +232,13 @@ def profiles(req: func.HttpRequest) -> func.HttpResponse:
     )
 
 
-@app.route(route="profile/{profile_id}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="profile/{profile_id}", methods=["GET", "PUT", "DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
 def profile_by_id(req: func.HttpRequest) -> func.HttpResponse:
     profile_id = req.route_params.get("profile_id")
     profile_list = _read_profiles()
-    profile = next((item for item in profile_list if str(item.get("id")) == str(profile_id)), None)
+    index = next((idx for idx, item in enumerate(profile_list) if str(item.get("id")) == str(profile_id)), None)
 
-    if profile is None:
+    if index is None:
         return func.HttpResponse(
             json.dumps({
                 "status": "not_found",
@@ -248,8 +248,66 @@ def profile_by_id(req: func.HttpRequest) -> func.HttpResponse:
             status_code=404,
         )
 
+    profile = profile_list[index]
+
+    if req.method.lower() == "get":
+        return func.HttpResponse(
+            json.dumps({"profile": profile}),
+            mimetype="application/json",
+            status_code=200,
+        )
+
+    if req.method.lower() == "put":
+        payload = _parse_request_body(req)
+        request_data = payload if isinstance(payload, dict) else {}
+        name = (request_data.get("name") or profile.get("name") or "").strip()
+        if not name:
+            return func.HttpResponse(
+                json.dumps({
+                    "status": "error",
+                    "message": "name is required to update a profile."
+                }),
+                mimetype="application/json",
+                status_code=400,
+            )
+
+        city = (request_data.get("city") or profile.get("city") or "").strip()
+        language = _resolve_language(request_data.get("language") or profile.get("language"))
+        interests = _normalize_interests(request_data.get("interests") or profile.get("interests"))
+        updated_profile = {
+            **profile,
+            "name": name,
+            "city": city,
+            "language": language,
+            "interests": interests,
+            "updated_at": _utc_now().isoformat().replace("+00:00", "Z"),
+        }
+        profile_list[index] = updated_profile
+        _write_profiles(profile_list)
+
+        return func.HttpResponse(
+            json.dumps({
+                "status": "updated",
+                "profile": updated_profile,
+            }),
+            mimetype="application/json",
+            status_code=200,
+        )
+
+    if req.method.lower() == "delete":
+        del profile_list[index]
+        _write_profiles(profile_list)
+        return func.HttpResponse(
+            json.dumps({
+                "status": "deleted",
+                "deleted_id": profile_id,
+            }),
+            mimetype="application/json",
+            status_code=200,
+        )
+
     return func.HttpResponse(
-        json.dumps({"profile": profile}),
+        json.dumps({"status": "error", "message": "Unsupported method."}),
         mimetype="application/json",
-        status_code=200,
+        status_code=405,
     )

@@ -105,3 +105,61 @@ def test_profiles_create_and_list_endpoints_work():
     fetched = profile_by_id(make_request(method="GET", route_params={"profile_id": "1"}))
     fetched_payload = json.loads(fetched.get_body().decode("utf-8"))
     assert fetched_payload["profile"]["id"] == "1"
+
+
+def test_profile_update_endpoint_updates_record():
+    reset_profiles_file()
+    profiles(
+        make_request(
+            method="POST",
+            body_data={
+                "name": "Ava",
+                "city": "Berlin",
+                "language": "de",
+                "interests": "AI,Books",
+            },
+        )
+    )
+
+    updated = profile_by_id(
+        make_request(
+            method="PUT",
+            route_params={"profile_id": "1"},
+            body_data={
+                "name": "Ava Updated",
+                "city": "Paris",
+                "language": "fr",
+                "interests": "AI,Design",
+            },
+        )
+    )
+
+    assert updated.status_code == 200
+    payload = json.loads(updated.get_body().decode("utf-8"))
+    assert payload["profile"]["name"] == "Ava Updated"
+    assert payload["profile"]["city"] == "Paris"
+    assert payload["profile"]["language"] == "French"
+
+
+def test_profile_delete_endpoint_removes_record():
+    reset_profiles_file()
+    profiles(
+        make_request(
+            method="POST",
+            body_data={
+                "name": "Ava",
+                "city": "Berlin",
+                "language": "de",
+                "interests": "AI,Books",
+            },
+        )
+    )
+
+    deleted = profile_by_id(make_request(method="DELETE", route_params={"profile_id": "1"}))
+    assert deleted.status_code == 200
+    payload = json.loads(deleted.get_body().decode("utf-8"))
+    assert payload["status"] == "deleted"
+
+    listed = profiles(make_request(method="GET"))
+    listed_payload = json.loads(listed.get_body().decode("utf-8"))
+    assert listed_payload["count"] == 0
