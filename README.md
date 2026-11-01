@@ -1,26 +1,30 @@
 <div align="center">
   <h1 style="color:#4f46e5; font-size: 2.6rem; margin-bottom: 0.2rem;">Azure Python Utility Service</h1>
-  <p style="color:#475569; font-size: 1.05rem;">A lightweight Azure Functions project that acts as a local utility service for profiles, health checks, and greeting responses without needing a cloud subscription.</p>
+  <p style="color:#475569; font-size: 1.05rem;">A local-first Azure Functions project for profile management, greeting utilities, and lightweight service monitoring without needing a cloud subscription.</p>
 </div>
 
 <div style="background: linear-gradient(135deg, #eef2ff 0%, #ecfeff 100%); border-left: 6px solid #4f46e5; padding: 1rem 1.25rem; border-radius: 12px;">
   <strong>Overview</strong><br>
-  This project is a small, useful API for local development. It provides a friendlier greeting endpoint, a health check, metadata, and a simple local profile store that keeps data in a JSON file on disk.
+  This project evolved from a simple demo into a practical utility service for local development. It exposes a small REST-style API with a greeting endpoint, health checks, profile CRUD operations, and a simple browser dashboard for testing the backend without requiring Azure Storage or a paid subscription.
 </div>
 
 ## Features
 
-- Azure Functions HTTP triggers for local utility endpoints
-- Greeting service with optional city, language, and interests
-- Real profile creation and retrieval using a local JSON data file
-- Structured JSON responses with validation
-- Health and info endpoints for service checks
-- No Azure subscription required for local experimentation
+- Azure Functions HTTP endpoints for local API testing
+- Personalized greeting endpoint with optional city, language, and interests
+- Local profile CRUD operations stored in a JSON file
+- Health and service metadata endpoints
+- Browser-based frontend dashboard for creating, viewing, and deleting profiles
+- Validation and structured JSON responses
+- No Azure subscription required for local usage
 
 ## Project Structure
 
 - <code>function_app.py</code> - API endpoints and local storage logic
 - <code>data/profiles.json</code> - local profile persistence file
+- <code>frontend/index.html</code> - lightweight dashboard UI
+- <code>frontend/styles.css</code> - dashboard styling
+- <code>frontend/app.js</code> - frontend API integration
 - <code>host.json</code> - Azure Functions runtime configuration
 - <code>local.settings.json</code> - local environment variables
 - <code>requirements.txt</code> - Python dependencies
@@ -108,12 +112,20 @@ If a required name is missing, the API returns 400 with a JSON error message.
 
 Profiles are stored in a local JSON file under the project data folder. This keeps the project useful for local development without requiring Azure Storage or a subscription.
 
+## Current Scope
+
+- Local-first Azure Functions API
+- JSON-backed profile management
+- Greeting utility with language and interest contextualization
+- Browser dashboard for quick manual testing
+- Automated Python regression tests
+
 ## Recommended Next Enhancements
 
 - Add a real database backend for production use
 - Add authentication and authorization layer
 - Add pagination to profile listing
-- Add profile update and delete endpoints
+- Add richer profile editing forms
 - Add deployment automation for Azure-hosted versions
 
 ## License
